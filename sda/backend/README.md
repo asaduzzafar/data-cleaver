@@ -1,7 +1,6 @@
 # Data Cleaver -- backend
 
-FastAPI over DuckDB. It replaced a Streamlit app ("v3" in code comments), which
-is not part of this repository.
+FastAPI over DuckDB.
 
 ## Run
 
