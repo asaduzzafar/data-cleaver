@@ -1,0 +1,96 @@
+# Push a tag like v1.0.0 and this builds DataCleaver-Setup.exe and attaches
+# it to a GitHub Release for that tag. No manual steps. Run it by hand
+# (workflow_dispatch) to get the installer as a build artefact without
+# publishing a release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  installer:
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write        # to create the release and attach the installer
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: sda/backend/requirements*.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sda/frontend/package-lock.json
+
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then v="${GITHUB_REF_NAME#v}"
+          else v="0.0.0-${GITHUB_SHA::7}"; fi
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Build the UI
+        working-directory: sda/frontend
+        run: npm ci && npm run build
+
+      - name: Build the app
+        run: |
+          python -m venv .venv
+          .venv/Scripts/python -m pip install -r sda/backend/requirements-dev.txt
+          .venv/Scripts/python sda/desktop/fetch_extensions.py
+          .venv/Scripts/pyinstaller --noconfirm --distpath build/dist \
+            --workpath build/work sda/desktop/sda.spec
+
+      # The packaged app launches for real, with an empty profile and a
+      # Windows-only PATH: sample install, a query, an .xlsx export from the
+      # bundled extension.
+      - name: Smoke-test the built app
+        run: .venv/Scripts/python sda/desktop/smoke.py build/dist/DataCleaver/DataCleaver.exe --clean
+
+      - name: Build the installer
+        run: |
+          iscc="$(command -v iscc || true)"
+          if [[ -z "$iscc" ]]; then
+            choco install innosetup -y --no-progress
+            iscc="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          fi
+          # Git Bash rewrites /-options and anything like a path; switch
+          # that off so ISCC sees its arguments as written.
+          MSYS2_ARG_CONV_EXCL='*' "$iscc" /Q \
+            "/DAppVersion=${{ steps.version.outputs.value }}" \
+            "/DRepoUrl=${{ github.event.repository.html_url }}" \
+            sda/desktop/installer.iss
+          size=$(stat -c %s build/installer/DataCleaver-Setup.exe)
+          echo "DataCleaver-Setup.exe: $((size / 1024 / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
+          (cd build/installer && sha256sum DataCleaver-Setup.exe > DataCleaver-Setup.exe.sha256)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DataCleaver-Setup-${{ steps.version.outputs.value }}
+          path: build/installer/*
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/installer/DataCleaver-Setup.exe
+            build/installer/DataCleaver-Setup.exe.sha256
+          generate_release_notes: true

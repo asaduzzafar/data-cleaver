@@ -1,0 +1,8 @@
+# Tests and packaging, on top of the runtime requirements.
+-r requirements.txt
+pytest>=9.0
+pytest-asyncio>=1.0
+# FastAPI's TestClient runs on httpx.
+httpx>=0.28
+# Builds the Windows app (sda/desktop/sda.spec).
+pyinstaller>=6.22
