@@ -1,0 +1,12 @@
+# Data Cleaver backend (codename SDA).
+# Exact-pinned for reproducible builds. DuckDB needs 1.4+ for store_rejects;
+# the GLOBAL-scope settings behaviour in db.py was verified on 1.5.5.
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+duckdb==1.5.5
+# DuckDB materialises TIMESTAMP WITH TIME ZONE through pytz and raises
+# InvalidInputException without it. Real extracts have tz-aware columns even
+# when test fixtures do not, so this is not optional.
+pytz==2026.4
+# The desktop shell: a native window over Edge WebView2 (Windows only).
+pywebview==6.2.1; sys_platform == "win32"

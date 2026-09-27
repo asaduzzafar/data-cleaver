@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <clipPath id="near"><path d="M0 0 H62 L38 100 H0 Z"/></clipPath>
+    <clipPath id="far"><path d="M70 0 H100 V100 H46 Z"/></clipPath>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#162236"/>
+  <svg x="20" y="20" width="88" height="88" viewBox="0 0 100 100">
+    <g clip-path="url(#near)" fill="#F6F5F1">
+      <rect x="6" y="14" width="88" height="18" rx="4"/>
+      <rect x="6" y="41" width="88" height="18" rx="4"/>
+      <rect x="6" y="68" width="88" height="18" rx="4"/>
+    </g>
+    <g clip-path="url(#far)" fill="#F6F5F1" transform="translate(4 -4)">
+      <rect x="6" y="14" width="88" height="18" rx="4"/>
+      <rect x="6" y="41" width="88" height="18" rx="4"/>
+      <rect x="6" y="68" width="88" height="18" rx="4"/>
+    </g>
+    <path d="M63 2 L69 2 L45 98 L39 98 Z" fill="#CEAD66"/>
+  </svg>
+</svg>
